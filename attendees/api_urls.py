@@ -1,5 +1,4 @@
 from django.urls import path
-
 from .api_views import api_list_attendees, api_show_attendee
 
 urlpatterns = [
