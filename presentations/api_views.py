@@ -1,15 +1,26 @@
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from .models import Presentation
+from events.models import Conference
 from common.json import ModelEncoder
 import json
 
 
-class PresentationListEncoder(ModelEncoder):
+class PresentationDetailEncoder(ModelEncoder):
     model = Presentation
     properties = [
+        "presenter_name",
+        "company_name",
+        "presenter_email",
         "title",
+        "synopsis",
+        "created",
     ]
+
+
+class PresentationListEncoder(ModelEncoder):
+    model = Presentation
+    properties = ["title"]
 
     def get_extra_data(self, o):
         return {"status": o.status.name}
@@ -47,31 +58,19 @@ def api_list_presentations(request, conference_id):
     else:
         content = json.loads(request.body)
         try:
-            conference = Presentation.objects.get(id=conference_id)
+            conference = Conference.objects.get(id=conference_id)
             content["conference"] = conference
         except Presentation.DoesNotExist:
             return JsonResponse(
                 {"message": "Invalid presentation id"},
-                status=400
+                status=400,
             )
-        presentation = Presentation.objects.create(**content)
+        presentation = Presentation.create(**content)
         return JsonResponse(
             presentation,
             encoder=PresentationDetailEncoder,
             safe=False,
         )
-
-
-class PresentationDetailEncoder(ModelEncoder):
-    model = Presentation
-    properties = [
-        "presenter_name",
-        "company_name",
-        "presenter_email",
-        "title",
-        "synopsis",
-        "created",
-    ]
 
 
 @require_http_methods(["DELETE", "GET", "PUT"])

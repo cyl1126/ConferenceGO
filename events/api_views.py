@@ -4,6 +4,7 @@ from .models import Conference, Location, State
 from common.json import ModelEncoder
 from django.views.decorators.http import require_http_methods
 from attendees.api_views import ConferenceListEncoder
+from .acls import get_photo, get_weather_data
 
 
 @require_http_methods(["GET", "POST"])
@@ -83,8 +84,12 @@ def api_show_conference(request, id):
     """
     if request.method == "GET":
         conference = Conference.objects.get(id=id)
+        weather = get_weather_data(
+            conference.location.city,
+            conference.location.state.abbreviation
+        )
         return JsonResponse(
-            conference,
+            {"conference": conference, "weather": weather},
             encoder=ConferenceDetailEncoder, safe=False
             )
     elif request.method == "DELETE":
@@ -123,17 +128,19 @@ def api_list_locations(request):
         try:
             state = State.objects.get(abbreviation=content["state"])
             content["state"] = state
-            location = Location.objects.create(**content)
-            return JsonResponse(
-                location,
-                encoder=LocationDetailEncoder,
-                safe=False,
-            )
+            photo = get_photo(content["city"], content["state"].abbreviation)
+            content.update(photo)
         except State.DoesNotExist:
             return JsonResponse(
                 {"messsage": "Invalid state abbreviation"},
                 status=400
             )
+        location = Location.objects.create(**content)
+        return JsonResponse(
+            location,
+            encoder=LocationDetailEncoder,
+            safe=False,
+        )
 
     """
     Lists the location names and the link to the location.
@@ -163,6 +170,7 @@ class LocationDetailEncoder(ModelEncoder):
         "room_count",
         "created",
         "updated",
+        "picture_url",
     ]
 
     def get_extra_data(self, o):

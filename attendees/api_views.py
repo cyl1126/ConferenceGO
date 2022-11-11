@@ -52,9 +52,9 @@ def api_list_attendees(request, conference_id):
     }
     """
     if request.method == "GET":
-        attendees = Attendee.objects.all()
+        attendee = Attendee.objects.all()
         return JsonResponse(
-            {"attendees": attendees},
+            {"attendee": attendee},
             encoder=AttendeeListEncoder,
         )
     else:
